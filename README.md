@@ -1,3 +1,3 @@
 Concurrent Ring Buffer
 ---
-Still needs to be fully tested and benchmarked.
+Run `make` to build, run the test suite and cleanup.
