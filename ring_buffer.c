@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -58,3 +59,54 @@ void *RingBuffer_dequeue(RingBuffer *buf) {
 
     return value;
 }
+
+int RingBuffer_enqueue_timed(RingBuffer *buf, void *value,
+        const struct timespec *abs_timeout) {
+    int err;
+
+    // wait for buffer to have space
+    if (abs_timeout == NULL) {
+        err = sem_trywait(&buf->spaceleft);
+    } else {
+        err = sem_timedwait(&buf->spaceleft, abs_timeout);
+    }
+
+    if (err == EAGAIN || err == ETIMEDOUT) {
+        return err;
+    }
+
+    // lock and store the value at head
+    pthread_mutex_lock(&buf->lock);
+    buf->buffer[ (buf->head++) & (buf->length - 1) ] = value;
+    pthread_mutex_unlock(&buf->lock);
+
+    // the buffer now has one more value
+    sem_post(&buf->currentsize);
+}
+
+void *RingBuffer_dequeue_timed(RingBuffer *buf,
+        const struct timespec *abs_timeout) {
+    int err;
+
+    // wait for the buffer to have a value
+    if (abs_timeout == NULL) {
+        err = sem_trywait(&buf->currentsize);
+    } else {
+        err = sem_timedwait(&buf->currentsize, abs_timeout);
+    }
+
+    if (err == EAGAIN || err == ETIMEDOUT) {
+        return NULL;
+    }
+
+    // lock and remove the tail value
+    pthread_mutex_lock(&buf->lock);
+    void *value = buf->buffer[ (buf->tail++) & (buf->length - 1) ];
+    pthread_mutex_unlock(&buf->lock);
+
+    // the buffer now has one less space
+    sem_post(&buf->spaceleft);
+
+    return value;
+}
+

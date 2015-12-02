@@ -14,3 +14,7 @@ RingBuffer *RingBuffer_new(int length);
 void RingBuffer_enqueue(RingBuffer *buf, void *value);
 
 void *RingBuffer_dequeue(RingBuffer *buf);
+
+int RingBuffer_enqueue_timed(RingBuffer *buf, void *value);
+
+int *RingBuffer_dequeue_timed(RingBuffer *buf);
