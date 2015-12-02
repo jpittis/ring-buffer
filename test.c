@@ -48,12 +48,12 @@ void test_RingBuffer_concurrent_dequeue_waits_for_enqueue() {
         exit(1);
     }
 
-    // enqueue four numbers to be dequeued concurrently
     int a = 1;
     int b = 2;
     int c = 3;
     int d = 4;
 
+    // enqueue four numbers to be dequeued concurrently
     RingBuffer_enqueue(buf, &a);
     RingBuffer_enqueue(buf, &b);
     RingBuffer_enqueue(buf, &c);
@@ -63,6 +63,50 @@ void test_RingBuffer_concurrent_dequeue_waits_for_enqueue() {
         fprintf(stderr, "error: failed to join thread");
         exit(1);
     }
+}
+
+void test_RingBuffer_concurrent_enqueue_waits_for_dequeue() {
+    RingBuffer *buf = RingBuffer_new(4);
+
+    int a = 1;
+    int b = 2;
+    int c = 3;
+    int d = 4;
+    int e = 5;
+    int f = 6;
+    int g = 7;
+    int h = 8;
+
+    // enqueue four numbers to fill queue
+    RingBuffer_enqueue(buf, &a);
+    RingBuffer_enqueue(buf, &b);
+    RingBuffer_enqueue(buf, &c);
+    RingBuffer_enqueue(buf, &d);
+
+    // start concurrent dequeue
+    pthread_t concurrent_dequeue;
+    if (pthread_create(&concurrent_dequeue, NULL,
+                concurrent_dequeue_four, buf)) {
+        fprintf(stderr, "error: failed to create thread");
+        exit(1);
+    }
+
+    // attempt to enqueue four more numbers
+    RingBuffer_enqueue(buf, &e);
+    RingBuffer_enqueue(buf, &f);
+    RingBuffer_enqueue(buf, &g);
+    RingBuffer_enqueue(buf, &h);
+
+    if (pthread_join(concurrent_dequeue, NULL)) {
+        fprintf(stderr, "error: failed to join thread");
+        exit(1);
+    }
+
+    // confirm the last four numbers were enqueued
+    assert(5 == *(int*)RingBuffer_dequeue(buf));
+    assert(6 == *(int*)RingBuffer_dequeue(buf));
+    assert(7 == *(int*)RingBuffer_dequeue(buf));
+    assert(8 == *(int*)RingBuffer_dequeue(buf));
 }
 
 int main() {
