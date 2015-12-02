@@ -1,19 +1,71 @@
+#include<stdlib.h>
+#include<stdio.h>
 #include<assert.h>
 #include"ring_buffer.h"
 
-int main() {
+void test_RingBuffer_is_a_fifo_queue() {
     RingBuffer *buf = RingBuffer_new(4);
 
-    // insert numbers into queue
     int a = 1;
     int b = 2;
     int c = 3;
+    int d = 4;
+
+    // enqueue the numbers
     RingBuffer_enqueue(buf, &a);
     RingBuffer_enqueue(buf, &b);
     RingBuffer_enqueue(buf, &c);
+    RingBuffer_enqueue(buf, &d);
 
-    // confirm it works as a queue
-    assert(&a == RingBuffer_dequeue(buf));
-    assert(&b == RingBuffer_dequeue(buf));
-    assert(&c == RingBuffer_dequeue(buf));
+    // confirm they come out in the same order as enqueued
+    assert(1 == *(int*)RingBuffer_dequeue(buf));
+    assert(2 == *(int*)RingBuffer_dequeue(buf));
+    assert(3 == *(int*)RingBuffer_dequeue(buf));
+    assert(4 == *(int*)RingBuffer_dequeue(buf));
+}
+
+void *concurrent_dequeue_four(void *b) {
+    RingBuffer *buf = (RingBuffer*)b;
+
+    // attempt to dequeue four numbers
+    // they should block until a concurrent enqueue
+    assert(1 == *(int*)RingBuffer_dequeue(buf));
+    assert(2 == *(int*)RingBuffer_dequeue(buf));
+    assert(3 == *(int*)RingBuffer_dequeue(buf));
+    assert(4 == *(int*)RingBuffer_dequeue(buf));
+
+    return NULL;
+}
+
+void test_RingBuffer_concurrent_dequeue_waits_for_enqueue() {
+    RingBuffer *buf = RingBuffer_new(4);
+
+    // start concurrent dequeue
+    pthread_t concurrent_dequeue;
+    if (pthread_create(&concurrent_dequeue, NULL,
+                concurrent_dequeue_four, buf)) {
+        fprintf(stderr, "error: failed to create thread");
+        exit(1);
+    }
+
+    // enqueue four numbers to be dequeued concurrently
+    int a = 1;
+    int b = 2;
+    int c = 3;
+    int d = 4;
+
+    RingBuffer_enqueue(buf, &a);
+    RingBuffer_enqueue(buf, &b);
+    RingBuffer_enqueue(buf, &c);
+    RingBuffer_enqueue(buf, &d);
+
+    if (pthread_join(concurrent_dequeue, NULL)) {
+        fprintf(stderr, "error: failed to join thread");
+        exit(1);
+    }
+}
+
+int main() {
+    test_RingBuffer_is_a_fifo_queue();
+    test_RingBuffer_concurrent_dequeue_waits_for_enqueue();
 }
