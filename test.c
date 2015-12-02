@@ -1,3 +1,4 @@
+#include<errno.h>
 #include<stdlib.h>
 #include<stdio.h>
 #include<assert.h>
@@ -109,8 +110,31 @@ void test_RingBuffer_concurrent_enqueue_waits_for_dequeue() {
     assert(8 == *(int*)RingBuffer_dequeue(buf));
 }
 
+void test_RingBuffer_does_not_wait_to_dequeue() {
+    RingBuffer *buf = RingBuffer_new(2);
+    void *value = RingBuffer_dequeue_timed(buf, NULL);
+    assert(value == NULL);
+}
+
+void test_RingBuffer_does_not_wait_to_enqueue() {
+    RingBuffer *buf = RingBuffer_new(2);
+
+    int a = 1;
+    int b = 2;
+    int c = 3;
+
+    // fille the queue
+    RingBuffer_enqueue(buf, &a);
+    RingBuffer_enqueue(buf, &b);
+
+    int err = RingBuffer_enqueue_timed(buf, &c, NULL);
+    assert(err != EAGAIN);
+}
+
 int main() {
     test_RingBuffer_is_a_fifo_queue();
     test_RingBuffer_concurrent_dequeue_waits_for_enqueue();
     test_RingBuffer_concurrent_enqueue_waits_for_dequeue();
+    test_RingBuffer_does_not_wait_to_dequeue();
+    test_RingBuffer_does_not_wait_to_enqueue();
 }
