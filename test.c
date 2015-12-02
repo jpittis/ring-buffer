@@ -112,4 +112,5 @@ void test_RingBuffer_concurrent_enqueue_waits_for_dequeue() {
 int main() {
     test_RingBuffer_is_a_fifo_queue();
     test_RingBuffer_concurrent_dequeue_waits_for_enqueue();
+    test_RingBuffer_concurrent_enqueue_waits_for_dequeue();
 }
