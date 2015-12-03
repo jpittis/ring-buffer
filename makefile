@@ -1,9 +1,10 @@
 CC = gcc
-CFLAGS = -c -Wall -std=c11 -g -pthread
+CFLAGS = -Wall -g 
 default: test
 
 test: test.o ring_buffer.o
-	$(CC) $(CFLAGS) test.o ring_buffer.o -o test
+	$(CC) $(CFLAGS) test.o ring_buffer.o -o test -pthread
+
 
 run: test
 	./test

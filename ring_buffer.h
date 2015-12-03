@@ -11,6 +11,8 @@ typedef struct {
 
 RingBuffer *RingBuffer_new(int length);
 
+void RingBuffer_free(RingBuffer *buf);
+
 void RingBuffer_enqueue(RingBuffer *buf, void *value);
 
 void *RingBuffer_dequeue(RingBuffer *buf);

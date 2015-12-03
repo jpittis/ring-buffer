@@ -14,6 +14,8 @@ RingBuffer *RingBuffer_new(int length) {
     buf->tail = 0;
     buf->buffer = malloc(sizeof(void*) * length);
 
+    pthread_mutex_init(&buf->lock, NULL);
+
     // buffer starts with all its space left
     sem_init(&buf->spaceleft, 0, length);
 
@@ -21,6 +23,11 @@ RingBuffer *RingBuffer_new(int length) {
     sem_init(&buf->currentsize, 0, 0);
 
     return buf;
+}
+
+void RingBuffer_free(RingBuffer *buf) {
+    free(buf->buffer);
+    free(buf);
 }
 
 void RingBuffer_enqueue(RingBuffer *buf, void *value) {
@@ -62,7 +69,7 @@ int RingBuffer_enqueue_timed(RingBuffer *buf, void *value,
         err = sem_timedwait(&buf->spaceleft, abs_timeout);
     }
 
-    if (err == EAGAIN || err == ETIMEDOUT) {
+    if (err) {
         return err;
     }
 
@@ -88,7 +95,7 @@ int RingBuffer_dequeue_timed(RingBuffer *buf, void **value,
         err = sem_timedwait(&buf->currentsize, abs_timeout);
     }
 
-    if (err == EAGAIN || err == ETIMEDOUT) {
+    if (err) {
         return err;
     }
 

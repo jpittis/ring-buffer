@@ -23,6 +23,8 @@ void test_RingBuffer_is_a_fifo_queue() {
     assert(2 == *(int*)RingBuffer_dequeue(buf));
     assert(3 == *(int*)RingBuffer_dequeue(buf));
     assert(4 == *(int*)RingBuffer_dequeue(buf));
+
+    RingBuffer_free(buf);
 }
 
 void *concurrent_dequeue_four(void *b) {
@@ -64,6 +66,8 @@ void test_RingBuffer_concurrent_dequeue_waits_for_enqueue() {
         fprintf(stderr, "error: failed to join thread");
         exit(1);
     }
+
+    RingBuffer_free(buf);
 }
 
 void test_RingBuffer_concurrent_enqueue_waits_for_dequeue() {
@@ -108,14 +112,18 @@ void test_RingBuffer_concurrent_enqueue_waits_for_dequeue() {
     assert(6 == *(int*)RingBuffer_dequeue(buf));
     assert(7 == *(int*)RingBuffer_dequeue(buf));
     assert(8 == *(int*)RingBuffer_dequeue(buf));
+
+    RingBuffer_free(buf);
 }
 
 void test_RingBuffer_does_not_wait_to_dequeue() {
     RingBuffer *buf = RingBuffer_new(2);
     void *value;
     int err = RingBuffer_dequeue_timed(buf, &value, NULL);
-    assert(err == 0);
-    assert(2 == *(int*)value);
+    assert(err);
+    assert(errno == EAGAIN);
+
+    RingBuffer_free(buf);
 }
 
 void test_RingBuffer_does_not_wait_to_enqueue() {
@@ -130,7 +138,10 @@ void test_RingBuffer_does_not_wait_to_enqueue() {
     RingBuffer_enqueue(buf, &b);
 
     int err = RingBuffer_enqueue_timed(buf, &c, NULL);
-    assert(err != EAGAIN);
+    assert(err);
+    assert(errno == EAGAIN);
+
+    RingBuffer_free(buf);
 }
 
 int main() {
