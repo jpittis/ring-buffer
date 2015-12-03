@@ -112,8 +112,10 @@ void test_RingBuffer_concurrent_enqueue_waits_for_dequeue() {
 
 void test_RingBuffer_does_not_wait_to_dequeue() {
     RingBuffer *buf = RingBuffer_new(2);
-    void *value = RingBuffer_dequeue_timed(buf, NULL);
-    assert(value == NULL);
+    void *value;
+    int err = RingBuffer_dequeue_timed(buf, &value, NULL);
+    assert(err == 0);
+    assert(2 == *(int*)value);
 }
 
 void test_RingBuffer_does_not_wait_to_enqueue() {

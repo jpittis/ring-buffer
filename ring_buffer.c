@@ -1,15 +1,6 @@
 #include <errno.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include <semaphore.h>
-
-typedef struct {
-    void **buffer; // a buffer of size length
-    int length;
-    pthread_mutex_t lock; // used to read or write to the buffer
-    int head, tail; // index of start and end of the queue in the buffer
-    sem_t spaceleft, currentsize; // acquired to enqueue or dequeue
-} RingBuffer;
+#include "ring_buffer.h"
 
 RingBuffer *RingBuffer_new(int length) {
     // buffer length should be a power of 2
@@ -82,9 +73,11 @@ int RingBuffer_enqueue_timed(RingBuffer *buf, void *value,
 
     // the buffer now has one more value
     sem_post(&buf->currentsize);
+
+    return 0;
 }
 
-void *RingBuffer_dequeue_timed(RingBuffer *buf,
+int RingBuffer_dequeue_timed(RingBuffer *buf, void **value,
         const struct timespec *abs_timeout) {
     int err;
 
@@ -96,17 +89,17 @@ void *RingBuffer_dequeue_timed(RingBuffer *buf,
     }
 
     if (err == EAGAIN || err == ETIMEDOUT) {
-        return NULL;
+        return err;
     }
 
     // lock and remove the tail value
     pthread_mutex_lock(&buf->lock);
-    void *value = buf->buffer[ (buf->tail++) & (buf->length - 1) ];
+    *value = buf->buffer[ (buf->tail++) & (buf->length - 1) ];
     pthread_mutex_unlock(&buf->lock);
 
     // the buffer now has one less space
     sem_post(&buf->spaceleft);
 
-    return value;
+    return 0;
 }
 
