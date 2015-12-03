@@ -21,7 +21,7 @@ RingBuffer *RingBuffer_new(int length) {
     buf->length = length;
     buf->head = 0;
     buf->tail = 0;
-    buf->buffer = malloc(sizeof(void*));
+    buf->buffer = malloc(sizeof(void*) * length);
 
     // buffer starts with all its space left
     sem_init(&buf->spaceleft, 0, length);
